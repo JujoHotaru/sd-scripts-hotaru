@@ -8,6 +8,8 @@ import re
 import torch
 from safetensors.torch import load_file, save_file
 
+import library.model_io as model_io
+
 ANIMA_LBW_SUBLAYERS = ("self_attn", "cross_attn", "mlp")
 ANIMA_LBW_BLOCK_COUNT = 28
 
@@ -232,6 +234,14 @@ def main():
         output_metadata["ss_anima_lora_ratio"] = str(args.ratio)
         if args.lbws:
             output_metadata["ss_anima_lora_lbws"] = args.lbws[0]
+        if os.path.splitext(args.output)[1].lower() == ".safetensors":
+            output_metadata.pop("sshs_model_hash", None)
+            output_metadata.pop("sshs_legacy_hash", None)
+            model_hash, legacy_hash = model_io.precalculate_safetensors_hashes(
+                scaled_state_dict, output_metadata
+            )
+            output_metadata["sshs_model_hash"] = model_hash
+            output_metadata["sshs_legacy_hash"] = legacy_hash
     save_lora(args.output, scaled_state_dict, output_metadata, args.no_metadata)
 
     summary_lbw = lbw or {sublayer: [1.0] * ANIMA_LBW_BLOCK_COUNT for sublayer in ANIMA_LBW_SUBLAYERS}
