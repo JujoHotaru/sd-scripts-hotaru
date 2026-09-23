@@ -59,6 +59,35 @@ Stable Diffusion等の画像生成モデルの学習、モデルによる画像�
 
 ### 更新履歴
 
+- **次のリリースに含まれる予定の更新:** 次のリリースに含まれる予定の主な変更点は以下の通りです。リリース前の変更点は予告なく変更される可能性があります。
+    - SD1.x / SD2.x / SDXL の学習向けに、OFTv2 と BOFT のネットワークモジュール（`networks.oft_v2`、`networks.boft`）を追加しました。[PR #2357](https://github.com/kohya-ss/sd-scripts/pull/2357)
+        - PEFT の実装に準拠した直交変換系のアダプタです。PEFT 形式の重みも読み込めます。umisetokikaze 氏に感謝します。
+        - これらのモジュールでは `--network_dim` はブロックサイズを意味します。詳細は[ドキュメント](./docs/train_network_oft_boft.md)をご覧ください。
+    - FLUX.1 および Anima の LoRA 学習で、サブセットごとの timestep sampling offset（`custom_attributes.timestep_sampling.offset`）を追加しました。[PR #2401](https://github.com/kohya-ss/sd-scripts/pull/2401) okdsf 氏に感謝します。
+        - データセットのサブセットごとに、timestep のサンプリング分布を低ノイズ側または高ノイズ側へ偏らせることができます。詳細は[ドキュメント](./docs/timestep_sampling_offset.md)をご覧ください。
+    - `--show_timesteps` 使用時に offset を適用した timestep の分布を確認できる `--show_timesteps_offset` を追加しました。[PR #2410](https://github.com/kohya-ss/sd-scripts/pull/2410)
+        - `shift` / `flux_shift` の timestep sampling における offset の挙動もドキュメントに記載しました。
+
+- **Version 0.11.1 (2026-06-16):**
+    - Anima LoRA／LLLite学習でtorch.compileサポートを追加しました。[PR #2379](https://github.com/kohya-ss/sd-scripts/pull/2379)
+        - 学習が20%ほど高速化されるようです。動作にはTritonやMSVCコンパイラが必要です。詳細は[ドキュメント](./docs/anima_torch_compile.md)をご覧ください。
+    - 2DのみのQwen-Image VAEを追加しました。[PR #2382](https://github.com/kohya-ss/sd-scripts/pull/2382)
+        - [issue #2369](https://github.com/kohya-ss/sd-scripts/issues/2369) での woct0rdho 氏の提案に基づいています。woct0rdho 氏に感謝します。
+        - `--qwen_image_vae_2d` を指定すると有効になります。重みは通常版（3D版）と同じものが使用できます。
+        - latentの事前キャッシュの高速化が期待できます（学習自体は変わりません）。詳細は[ドキュメント](./docs/anima_train_network.md#memory-and-speed--メモリ速度関連)をご覧ください。
+    - LLLiteインペインティングモデルの学習サポートを追加しました。[PR #2378](https://github.com/kohya-ss/sd-scripts/pull/2378)
+        - 詳細は[ドキュメント](./docs/anima_train_control_net_lllite.md)をご覧ください。
+    - timestep samplingの設定値のログ出力、timestepsの分布の可視化を追加しました。[PR #2384](https://github.com/kohya-ss/sd-scripts/pull/2384)
+        - 可視化により学習がどのようなタイムステップで行われるかを理解しやすくなります。
+        - 詳細は[ドキュメント](./docs/anima_train_network.md#visualizing-the-timestep-distribution)をご覧ください。
+
+- **Version 0.11.0 (2026-06-12):**
+    - コードベースの大規模な内部リファクタリングを行い、コードベースの品質と保守性を向上させました。[PR #2372](https://github.com/kohya-ss/sd-scripts/pull/2372)
+        - ユーザーの方には直接の影響が極力少なくなるよう配慮しました。詳細について、および不具合報告などは[こちらのdiscussion](https://github.com/kohya-ss/sd-scripts/discussions/2358)までお願いします。
+
+- **Version 0.10.6 (2026-06-12):**
+    - リファクタリングマージ前の安定バージョン。
+
 - **Version 0.10.5 (2026-05-08):**
     - transformersのバージョン5以降に対応しました。[PR #2315](https://github.com/kohya-ss/sd-scripts/pull/2315) および [PR #2316](https://github.com/kohya-ss/sd-scripts/pull/2316) marcus165090-spec氏に感謝します。
         - `requirements.txt`の`transformers`のバージョンは4.xのままですが、5.xでも動作します。何らかの理由で5.xを用いる場合はdiffusersもあわせて最新バージョンにしてください。
@@ -70,22 +99,6 @@ Stable Diffusion等の画像生成モデルの学習、モデルによる画像�
     - SD 1.5/SDXLのinpaintingモデルの学習に対応しました。[PR #2309](https://github.com/kohya-ss/sd-scripts/pull/2309) および [PR #2318](https://github.com/kohya-ss/sd-scripts/pull/2318)allanoepping氏に感謝します。
         - 詳細は[ドキュメント](./docs/inpainting_training.md)をご覧ください。
 
-- **Version 0.10.3 (2026-04-02):**
-    - Animaでfp16で学習する際の安定性をさらに改善しました。[PR #2302](https://github.com/kohya-ss/sd-scripts/pull/2302) 問題をご報告いただいた方々に深く感謝します。
-
-- **Version 0.10.2 (2026-03-30):**
-    - SD/SDXLのLECO学習に対応しました。[PR #2285](https://github.com/kohya-ss/sd-scripts/pull/2285) および [PR #2294](https://github.com/kohya-ss/sd-scripts/pull/2294) umisetokikaze氏に深く感謝します。
-        - 詳細は[ドキュメント](./docs/train_leco.md)をご覧ください。
-    - `networks/resize_lora.py`が`torch.svd_lowrank`に対応し、大幅に高速化されました。[PR #2240](https://github.com/kohya-ss/sd-scripts/pull/2240) および [PR #2296](https://github.com/kohya-ss/sd-scripts/pull/2296) woct0rdho氏に深く感謝します。
-        - デフォルトは有効になっています。`--svd_lowrank_niter`オプションで反復回数を指定できます（デフォルトは2、多いほど精度が向上します）。0にすると従来の方法になります。詳細は `--help` でご確認ください。
-    - LoKr/LoHaをSDXL/Animaでサポートしました。[PR #2275](https://github.com/kohya-ss/sd-scripts/pull/2275)
-        - 詳細は[ドキュメント](./docs/loha_lokr.md)をご覧ください。
-    - マルチ解像度データセット（同じ画像を複数のbucketサイズにリサイズして使用）がSD/SDXLの学習でサポートされました。[PR #2269](https://github.com/kohya-ss/sd-scripts/pull/2269) また、マルチ解像度データセットで同じ解像度の画像が重複して使用される事象への対応を行いました。[PR #2273](https://github.com/kohya-ss/sd-scripts/pull/2273)
-        - woct0rdho氏に感謝します。
-        - [ドキュメント英語版](./docs/config_README-en.md#behavior-when-there-are-duplicate-subsets) / [ドキュメント日本語版](./docs/config_README-ja.md#重複したサブセットが存在する時の挙動) をご覧ください。
-    - Animaでfp16で学習する際の安定性が向上しました。[PR #2297](https://github.com/kohya-ss/sd-scripts/pull/2297) ただし、依然として不安定な場合があるようです。問題が発生する場合は、詳細をIssueでお知らせください。
-    - その他、細かいバグ修正や改善を行いました。
-
 ### サポートモデル
 
 * **Stable Diffusion 1.x/2.x**
@@ -94,7 +107,7 @@ Stable Diffusion等の画像生成モデルの学習、モデルによる画像�
 * **FLUX.1**
 * **LUMINA**
 * **HunyuanImage-2.1**
-* **Anima preview**
+* **Anima**
 
 ### 機能
 
@@ -114,6 +127,7 @@ Stable Diffusion等の画像生成モデルの学習、モデルによる画像�
 * [LoRA学習の概要](./docs/train_network.md)
 * [データセット設定](./docs/config_README-ja.md) / [英語版](./docs/config_README-en.md)
 * [高度な学習オプション](./docs/train_network_advanced.md)
+* [OFTv2 / BOFT学習](./docs/train_network_oft_boft.md)
 * [SDXL学習](./docs/sdxl_train_network.md)
 * [SD3学習](./docs/sd3_train_network.md)
 * [FLUX.1学習](./docs/flux_train_network.md)
@@ -124,6 +138,7 @@ Stable Diffusion等の画像生成モデルの学習、モデルによる画像�
 * [Fine-tuning](./docs/fine_tune.md)
 * [Textual Inversion学習](./docs/train_textual_inversion.md)
 * [ControlNet-LLLite学習](./docs/train_lllite_README-ja.md) / [英語版](./docs/train_lllite_README.md)
+* [Anima向けControlNet-LLLite学習ガイド](./docs/anima_train_control_net_lllite.md)
 * [Validation](./docs/validation.md)
 * [マスク損失学習](./docs/masked_loss_README-ja.md) / [英語版](./docs/masked_loss_README.md)
 * [インペインティング学習](./docs/inpainting_training.md)

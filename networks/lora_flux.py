@@ -909,7 +909,7 @@ class LoRANetwork(torch.nn.Module):
                             split_dims = None
                             if is_flux and split_qkv:
                                 if "double" in lora_name and "qkv" in lora_name:
-                                    (split_dims,) = self.get_qkv_mlp_split_dims()[:3]  # qkv only
+                                    split_dims = self.get_qkv_mlp_split_dims()[:3]  # qkv only
                                 elif "single" in lora_name and "linear1" in lora_name:
                                     split_dims = self.get_qkv_mlp_split_dims()  # qkv + mlp
 
@@ -1358,12 +1358,12 @@ class LoRANetwork(torch.nn.Module):
 
         if os.path.splitext(file)[1] == ".safetensors":
             from safetensors.torch import save_file
-            from library import train_util
+            import library.model_io as model_io
 
             # Precalculate model hashes to save time on indexing
             if metadata is None:
                 metadata = {}
-            model_hash, legacy_hash = train_util.precalculate_safetensors_hashes(state_dict, metadata)
+            model_hash, legacy_hash = model_io.precalculate_safetensors_hashes(state_dict, metadata)
             metadata["sshs_model_hash"] = model_hash
             metadata["sshs_legacy_hash"] = legacy_hash
 
