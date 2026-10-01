@@ -224,6 +224,8 @@ class ControlNetSubset(BaseSubset):
         conditioning_data_dir: str,
         caption_extension: str,
         cache_info: bool,
+        addift_mask_data_dir: Optional[str],
+        addift_alpha_mask: Optional[str],
         num_repeats,
         shuffle_caption,
         caption_separator,
@@ -277,6 +279,8 @@ class ControlNetSubset(BaseSubset):
         )
 
         self.conditioning_data_dir = conditioning_data_dir
+        self.addift_mask_data_dir = addift_mask_data_dir
+        self.addift_alpha_mask = addift_alpha_mask
         self.caption_extension = caption_extension
         if self.caption_extension and not self.caption_extension.startswith("."):
             self.caption_extension = "." + self.caption_extension

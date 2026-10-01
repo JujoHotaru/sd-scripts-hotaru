@@ -8,6 +8,7 @@
 <summary>クリックすると展開します</summary>
 
 - [はじめに](#はじめに)
+    - [このフォークでの主な追加](#このフォークでの主な追加)
     - [スポンサー](#スポンサー)
     - [スポンサー募集のお知らせ](#スポンサー募集のお知らせ)
     - [更新履歴](#更新履歴)
@@ -35,6 +36,14 @@
 ## はじめに
 
 Stable Diffusion等の画像生成モデルの学習、モデルによる画像生成、その他のスクリプトを入れたリポジトリです。
+
+### このフォークでの主な追加
+
+このフォークでは、本家 sd-scripts に加えて、以下の実験的な機能を追加しています。
+
+* **Anima iLECO学習**: Anima 向けの prompt-to-prompt edit LoRA 学習です。詳しくは [Anima iLECO学習](./docs/anima_train_leco.md) を参照してください。
+* **Anima ADDifT学習**: source/target の画像ペアから Anima 向け edit LoRA を学習します。詳しくは [Anima ADDifT学習](./docs/anima_train_addift.md) を参照してください。
+* **アーキテクチャ非依存 LoRA マージツール**: sd-scripts 形式の LoRA 差分を再構成し、SVD で再分解して複数 LoRA を合成します。詳しくは [アーキテクチャ非依存 LoRA マージツール](./docs/merger.md) を参照してください。
 
 ### スポンサー
 
@@ -140,6 +149,8 @@ Stable Diffusion等の画像生成モデルの学習、モデルによる画像�
 * [FLUX.1学習](./docs/flux_train_network.md)
 * [LUMINA学習](./docs/lumina_train_network.md)
 * [HunyuanImage-2.1学習](./docs/hunyuan_image_train_network.md)
+* [Anima iLECO学習](./docs/anima_train_leco.md)
+* [Anima ADDifT学習](./docs/anima_train_addift.md)
 * [Fine-tuning](./docs/fine_tune.md)
 * [Textual Inversion学習](./docs/train_textual_inversion.md)
 * [ControlNet-LLLite学習](./docs/train_lllite_README-ja.md) / [英語版](./docs/train_lllite_README.md)
@@ -152,6 +163,7 @@ Stable Diffusion等の画像生成モデルの学習、モデルによる画像�
 
 * [画像生成スクリプト](./docs/gen_img_README-ja.md) / [英語版](./docs/gen_img_README.md)
 * [WD14 Taggerによる画像タグ付け](./docs/wd14_tagger_README-ja.md) / [英語版](./docs/wd14_tagger_README-en.md)
+* [アーキテクチャ非依存 LoRA マージツール](./docs/merger.md)
 
 ### 旧ドキュメント（日本語）
 
