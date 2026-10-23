@@ -948,7 +948,7 @@ class Block(nn.Module):
 class Anima(nn.Module):
     """Cosmos-Predict2 DiT model for image/video generation.
 
-    28 transformer blocks with AdaLN-LoRA modulation, 3D RoPE, and optional LLM Adapter.
+    AdaLN-LoRA、3D RoPE、LLM Adapter を備え、Anima の28層と Anima 2.9B の40層に対応する。
     """
 
     LATENT_CHANNELS = 16

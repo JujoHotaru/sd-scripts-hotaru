@@ -211,6 +211,7 @@ For LoRA training, use `network_reg_lrs` in `--network_args` instead. See [Secti
 * `--blocks_to_swap=<integer>`
   - Number of Transformer blocks to swap between CPU and GPU. More blocks reduce VRAM but slow training. Maximum values depend on model size:
     - 28-block model: max **26** (Anima-Preview)
+    - 40-block model: max **38** (Anima 2.9B)
     - 36-block model: max **34**
   - `--block_swap_h2d_only` enables the faster H2D-only block swap for LoRA training (requires `--gradient_checkpointing`). See [Block Swap](./block_swap.md).
     - 20-block model: max **18**

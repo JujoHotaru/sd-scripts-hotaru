@@ -41,9 +41,9 @@ python anima_lora_scale.py `
   --lbws "[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0.8]"
 ```
 
-To change the strength of individual DiT blocks, add one `--lbws` JSON entry containing exactly 28 values. The positions map to blocks `0` through `27`, matching `anima_merger.py`:
+To change individual DiT block strengths, use one `--lbws` entry with 28 values for Anima (blocks 0–27), or 40 values for Anima 2.9B (blocks 0–39). The positions map directly to block indices, matching `anima_merger.py`. The following example uses a 28-block LoRA:
 
-DiT ブロックごとの強度を変更する場合は、`--lbws` に 28 要素の JSON 配列を 1 つ指定します。配列の位置は `anima_merger.py` と同じく、DiT ブロック `0` から `27` に対応します。
+DiT ブロックごとの強度を変更する場合は、`--lbws` に従来の Anima 用の28要素（0〜27）、または Anima 2.9B 用の40要素（0〜39）の JSON 配列を1つ指定します。配列の位置は `anima_merger.py` と同じくブロック番号に対応します。次の例は28層の LoRA 用です。
 
 ```powershell
 python anima_lora_scale.py `
@@ -73,13 +73,13 @@ When both switches are specified, the effective multiplier is multiplied per mod
 effective multiplier = --scale[sublayer] * --ratio * --lbws[sublayer][block_index]
 ```
 
-The scaler prints the 28 combined `--ratio * --lbws` values for each sublayer using the same `Anima strengths for ...` format as `anima_merger.py`. This output is printed when `--lbws` is specified.
+The scaler prints 28 or 40 combined `--ratio * --lbws` values for each sublayer using the same `Anima strengths for ...` format as `anima_merger.py`. Without `--lbws`, the summary length is inferred from the input block indices.
 
-`--lbws` を指定すると、`anima_merger.py` と同じ `Anima strengths for ...` 形式で、サブレイヤーごとの `--ratio * --lbws` の合成値 28 個をコンソールに出力します。
+`anima_merger.py` と同じ `Anima strengths for ...` 形式で、サブレイヤーごとの `--ratio * --lbws` の合成値28個または40個をコンソールに出力します。`--lbws` を省略した場合は入力のブロック番号から表示する層数を判断します。
 
-For a legacy array `--lbws` entry, the same 28 block weights are applied to `self_attn`, `cross_attn`, and `mlp`. Omitting `--lbws` is equivalent to specifying 28 values of `1.0`, so the previous scaler behavior is unchanged.
+An array applies the same 28 or 40 weights to all three sublayers. Structured arrays must have matching lengths. Omitting `--lbws` applies `1.0` to every block. A 28-value array cannot cover an input containing block 28 or later; this fails before saving.
 
-従来形式の配列を `--lbws` に指定した場合は、同じ 28 要素のブロック倍率を `self_attn`、`cross_attn`、`mlp` のすべてへ適用します。`--lbws` を省略した場合は、28 要素すべて `1.0` を指定した場合と同じで、従来のスケーラー動作が維持されます。
+配列形式では、同じ28要素または40要素のブロック倍率を3つのサブレイヤーへ適用します。構造化 JSON の3つの配列も同じ長さにそろえます。`--lbws` を省略した場合はすべて `1.0` として扱います。ブロック28以降を含む入力に28要素だけを指定すると、保存前にエラーになります。
 
 The `--scale` value must contain all three keys exactly once:
 
@@ -110,9 +110,9 @@ The multipliers are applied to `lora_up.weight` for matching modules:
 - `cross_attn`: `cross_attn_*` and `adaln_modulation_cross_attn_*`
 - `mlp`: `mlp_*` and `adaln_modulation_mlp_*`
 
-The tool supports Anima blocks `0` through `27`. Modules outside those blocks, such as `x_embedder`, `t_embedder`, `final_layer`, and `llm_adapter`, are left unchanged.
+The tool supports Anima blocks 0–27 and Anima 2.9B blocks 0–39. Non-block modules such as `x_embedder`, `t_embedder`, `final_layer`, and `llm_adapter` are left unchanged. It does not remap block indices between architectures.
 
-Anima ブロック `0` から `27` までに対応しています。`x_embedder`、`t_embedder`、`final_layer`、`llm_adapter` など、ブロック外の module は変更されません。
+従来の Anima のブロック0〜27と、Anima 2.9B のブロック0〜39に対応しています。`x_embedder`、`t_embedder`、`final_layer`、`llm_adapter` など、ブロック外のモジュールは変更されません。28層と40層の間でブロック番号を変換する処理はありません。[対応範囲と制約](./anima_29b.md)も確認してください。
 
 ## Preservation / 保持されるもの
 

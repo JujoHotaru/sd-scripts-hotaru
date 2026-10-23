@@ -15,10 +15,10 @@ This fork is based on [tukisuwa's fork (tukisuwa/sd-scripts)](https://github.com
 
 ## Additions and fixes by Hotaru Jujo
 
-- **Anima LoRA scaling** — Changes the strengths of `self_attn`, `cross_attn`, and `mlp` without SVD or changing the rank. Supports weights for all 28 DiT blocks (blocks 0–27). See [`anima_lora_scale.py`](./anima_lora_scale.py) and the [guide](./docs/anima_lora_scale.md).
+- **Anima LoRA scaling** — Changes the strengths of `self_attn`, `cross_attn`, and `mlp` without SVD or changing the rank. Supports 28-block Anima (0–27) and 40-block Anima 2.9B (0–39). See [`anima_lora_scale.py`](./anima_lora_scale.py) and the [guide](./docs/anima_lora_scale.md).
 - **Anima LoRA merger** — Merges Anima LoRAs using SVD, with multipliers for individual blocks and sublayers. See [`anima_merger.py`](./anima_merger.py) and the [guide](./docs/anima_merger.md).
 - **Metadata hash update fix** — Recalculates model hashes when tensor data changes, so the output metadata matches the modified tensors.
 
 ## Notes
 
-Training features are experimental. The LoRA tools require compatible sd-scripts-style keys and tensor shapes. Anima block weights correspond to blocks 0 through 27. Consult each guide for usage and limitations. For installation and basic setup, see the [original README](./README.md).
+Training features are experimental. The LoRA tools require compatible sd-scripts-style keys and tensor shapes. Block-weight arrays contain 28 values for Anima or 40 for Anima 2.9B. The common model loader includes [upstream PR #2418](https://github.com/kohya-ss/sd-scripts/pull/2418). See [Anima 2.9B compatibility](./docs/anima_29b.md) for scope and limitations. For installation and basic setup, see the [original README](./README.md).
