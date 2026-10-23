@@ -5,6 +5,7 @@ import torch
 from safetensors.torch import load_file, save_file
 from tqdm import tqdm
 from library import train_util
+from library.anima_block_utils import infer_anima_lora_block_count, validate_anima_block_weights
 from library.utils import setup_logging # このライブラリは別途必要です
 import logging
 import re
@@ -14,7 +15,6 @@ setup_logging()
 logger = logging.getLogger(__name__)
 
 CLAMP_QUANTILE = 0.99
-ANIMA_LBW_BLOCK_COUNT = 28
 ANIMA_LBW_SUBLAYERS = ("self_attn", "cross_attn", "mlp")
 _LLOYD_MAX_CACHE = {}
 _ROTATION_CACHE = {}
@@ -68,17 +68,15 @@ def parse_anima_lbws(lbws, model_count, require_arrays=False):
     normalized_lbws = []
     for lbw in parsed_lbws:
         if isinstance(lbw, list):
-            if len(lbw) != ANIMA_LBW_BLOCK_COUNT:
-                raise ValueError(f"Each --lbws array must contain exactly {ANIMA_LBW_BLOCK_COUNT} values for Anima blocks 0-27.")
-            if not all(isinstance(weight, (int, float)) for weight in lbw):
-                raise ValueError("All --lbws values must be numbers.")
-            normalized_lbws.append({sublayer: lbw for sublayer in ANIMA_LBW_SUBLAYERS})
+            normalized = {sublayer: lbw for sublayer in ANIMA_LBW_SUBLAYERS}
+            validate_anima_block_weights(normalized)
+            normalized_lbws.append(normalized)
             continue
 
         if require_arrays:
-            raise ValueError("--lbws_anima can only be used with 28-value JSON array entries in --lbws.")
+            raise ValueError("--lbws_anima can only be used with 28-value JSON array or 40-value JSON array entries in --lbws.")
         if not isinstance(lbw, dict):
-            raise ValueError("Each --lbws entry must be a 28-value JSON array or an object with self_attn, cross_attn, and mlp arrays.")
+            raise ValueError("Each --lbws entry must be a 28- or 40-value JSON array or an object with self_attn, cross_attn, and mlp arrays.")
         missing = [sublayer for sublayer in ANIMA_LBW_SUBLAYERS if sublayer not in lbw]
         if missing:
             raise ValueError(f"Structured --lbws is missing required keys: {', '.join(missing)}.")
@@ -88,11 +86,8 @@ def parse_anima_lbws(lbws, model_count, require_arrays=False):
         normalized = {}
         for sublayer in ANIMA_LBW_SUBLAYERS:
             weights = lbw[sublayer]
-            if not isinstance(weights, list) or len(weights) != ANIMA_LBW_BLOCK_COUNT:
-                raise ValueError(f"--lbws.{sublayer} must contain exactly {ANIMA_LBW_BLOCK_COUNT} values.")
-            if not all(isinstance(weight, (int, float)) for weight in weights):
-                raise ValueError(f"All --lbws.{sublayer} values must be numbers.")
             normalized[sublayer] = weights
+        validate_anima_block_weights(normalized)
         normalized_lbws.append(normalized)
 
     return normalized_lbws
@@ -107,8 +102,9 @@ def get_anima_lbw(base_module_name, lbw, lbws_anima=None):
         return 1.0
 
     block_index = int(match.group(1))
-    if block_index >= ANIMA_LBW_BLOCK_COUNT:
-        raise ValueError(f"Anima block index {block_index} in '{base_module_name}' is outside the supported range 0-27.")
+    block_count = len(lbw["self_attn"])
+    if block_index >= block_count:
+        raise ValueError(f"Anima block index {block_index} in '{base_module_name}' is outside the supported range 0-{block_count - 1}.")
 
     suffix = match.group(2)
     if suffix.startswith("self_attn_") or suffix.startswith("adaln_modulation_self_attn_"):
@@ -421,6 +417,15 @@ def merge_lora_models(model_paths, ratios, lbws, lbws_anima, new_rank, new_conv_
             first_lora_base_modules = base_modules
         lora_sds_metadata_cache.append((sd, metadata, base_modules))
 
+    if lbws is None and lbws_anima is not None:
+        lbws = [
+            {sublayer: [1.0] * infer_anima_lora_block_count(sd) for sublayer in ANIMA_LBW_SUBLAYERS}
+            for sd, _, _ in lora_sds_metadata_cache
+        ]
+    if lbws is not None:
+        for lbw, (sd, _, _) in zip(lbws, lora_sds_metadata_cache):
+            validate_anima_block_weights(lbw, sd)
+
     logger.info(f"Found {len(all_lora_base_modules)} unique LoRA base modules across all models.")
     if filter_by_first_lora and first_lora_base_modules:
         logger.info(f"First LoRA contains {len(first_lora_base_modules)} base modules.")
@@ -634,11 +639,7 @@ def merge(args):
     if len(args.models) != len(args.ratios):
         raise ValueError("Number of models must be equal to number of ratios.")
     lbws_anima = parse_anima_lbws_anima(args.lbws_anima)
-    lbws_input = args.lbws
-    if lbws_anima is not None and not lbws_input:
-        default_lbw = json.dumps([1.0] * ANIMA_LBW_BLOCK_COUNT)
-        lbws_input = [default_lbw] * len(args.models)
-    lbws = parse_anima_lbws(lbws_input, len(args.models), require_arrays=lbws_anima is not None)
+    lbws = parse_anima_lbws(args.lbws, len(args.models), require_arrays=lbws_anima is not None)
 
     def str_to_dtype(p):
         if p is None: return None
@@ -735,7 +736,7 @@ def setup_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument(
         "--lbws", type=str, nargs="*", default=[],
-        help="Anima block weights as one 28-value JSON array per model. Values map to lora_unet_blocks_0 through lora_unet_blocks_27.",
+        help="Anima block weights as one 28- or 40-value JSON array per model, mapping to blocks 0-27 or 0-39.",
     )
     parser.add_argument(
         "--lbws_anima", type=str, default=None,

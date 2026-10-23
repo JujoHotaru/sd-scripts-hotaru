@@ -234,9 +234,9 @@ attention module だけを合成したい場合や、出力に含めたくない
 
 ## Anima Block Weights / Anima の階層ブロック重み
 
-For Anima LoRAs, use `--lbws` to give each input LoRA a JSON array of 28 block weights. Array position `0` maps to `lora_unet_blocks_0_*`, and position `27` maps to `lora_unet_blocks_27_*`. Supply one quoted array for every `--models` entry, in the same order.
+For Anima LoRAs, use `--lbws` to give each input LoRA a JSON array of 28 weights (Anima, blocks 0–27) or 40 weights (Anima 2.9B, blocks 0–39). Array positions map directly to block indices. Supply one quoted array for every `--models` entry, in the same order. The following example uses 28-block LoRAs.
 
-Anima LoRA では `--lbws` に 28 要素の JSON 配列を指定すると、入力 LoRA ごとに階層ブロックの強度を設定できます。配列の位置 `0` は `lora_unet_blocks_0_*`、位置 `27` は `lora_unet_blocks_27_*` に対応します。`--models` と同じ順番で、各入力 LoRA に 1 つずつ引用符付き配列を指定してください。
+Anima LoRA では `--lbws` に、従来モデル用の28要素（ブロック0〜27）、または Anima 2.9B 用の40要素（ブロック0〜39）の JSON 配列を指定します。配列の位置はブロック番号に対応します。`--models` と同じ順番で、各入力 LoRA に1つずつ引用符付き配列を指定してください。次の例は28層の LoRA 用です。
 
 ```bash
 python anima_merger.py \
@@ -266,7 +266,11 @@ python anima_merger.py \
 
 ブロック `i` の実効強度は、サブレイヤーに応じて `lbws[i] * lbws_anima[sublayer]` になります。`self_attn` は `adaln_modulation_self_attn`、`cross_attn` は `adaln_modulation_cross_attn`、`mlp` は `adaln_modulation_mlp` も制御します。
 
-`--lbws_anima` と `--lbws` を併用する場合、`--lbws` は各モデルに対する 28 要素配列形式で指定してください。`--lbws` を省略した場合は、28 要素すべて `1.0` の配列を指定した場合と同じです。`--lbws_anima` なしの場合は、従来の配列形式に加えて構造化 JSON 形式も使用できます。
+`--lbws_anima` と `--lbws` を併用する場合、各モデルに対応する28要素または40要素の配列を指定してください。`--lbws` を省略した場合は、入力 LoRA のブロック番号から必要な層数を判断し、すべて `1.0` として扱います。`--lbws_anima` なしの場合は、構造化 JSON 形式も使用でき、3つのサブレイヤー配列はすべて同じ長さにします。入力にブロック28以降があるのに28要素だけを指定すると、マージ前にエラーになります。
+
+With `--lbws_anima` alone, default weights are generated from the block indices in each input LoRA. Structured arrays must all have the same length. A 28-value array cannot cover an input containing block 28 or later. A partial LoRA containing only blocks 0–27 does not identify its original architecture; no index remapping between 28- and 40-block models is performed. See [compatibility notes](./anima_29b.md).
+
+ブロック0〜27だけを含む部分 LoRA から元モデルの層数は断定できません。28層モデルと40層モデルの間でブロック番号を変換する機能はありません。[対応範囲と制約](./anima_29b.md)も確認してください。
 
 ## Quantization Before SVD / SVD 前の量子化
 

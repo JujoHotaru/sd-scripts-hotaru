@@ -9,9 +9,9 @@ import torch
 from safetensors.torch import load_file, save_file
 
 import library.model_io as model_io
+from library.anima_block_utils import infer_anima_lora_block_count, validate_anima_block_weights
 
 ANIMA_LBW_SUBLAYERS = ("self_attn", "cross_attn", "mlp")
-ANIMA_LBW_BLOCK_COUNT = 28
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
 logger = logging.getLogger(__name__)
@@ -74,17 +74,13 @@ def parse_anima_lbws(lbws):
         raise ValueError("The --lbws entry must be a JSON array or object.") from err
 
     if isinstance(parsed_lbw, list):
-        if len(parsed_lbw) != ANIMA_LBW_BLOCK_COUNT:
-            raise ValueError(
-                f"The --lbws array must contain exactly {ANIMA_LBW_BLOCK_COUNT} values for Anima blocks 0-27."
-            )
-        if not all(isinstance(weight, (int, float)) for weight in parsed_lbw):
-            raise ValueError("All --lbws values must be numbers.")
-        return {sublayer: parsed_lbw for sublayer in ANIMA_LBW_SUBLAYERS}
+        normalized = {sublayer: parsed_lbw for sublayer in ANIMA_LBW_SUBLAYERS}
+        validate_anima_block_weights(normalized)
+        return normalized
 
     if not isinstance(parsed_lbw, dict):
         raise ValueError(
-            "The --lbws entry must be a 28-value JSON array or an object with self_attn, cross_attn, and mlp arrays."
+            "The --lbws entry must be a 28- or 40-value JSON array or an object with self_attn, cross_attn, and mlp arrays."
         )
     missing = [sublayer for sublayer in ANIMA_LBW_SUBLAYERS if sublayer not in parsed_lbw]
     if missing:
@@ -96,11 +92,8 @@ def parse_anima_lbws(lbws):
     normalized = {}
     for sublayer in ANIMA_LBW_SUBLAYERS:
         weights = parsed_lbw[sublayer]
-        if not isinstance(weights, list) or len(weights) != ANIMA_LBW_BLOCK_COUNT:
-            raise ValueError(f"--lbws.{sublayer} must contain exactly {ANIMA_LBW_BLOCK_COUNT} values.")
-        if not all(isinstance(weight, (int, float)) for weight in weights):
-            raise ValueError(f"All --lbws.{sublayer} values must be numbers.")
         normalized[sublayer] = weights
+    validate_anima_block_weights(normalized)
     return normalized
 
 
@@ -110,8 +103,8 @@ def get_anima_sublayer(base_module_name):
         return None
 
     block_index = int(match.group(1))
-    if not 0 <= block_index < 28:
-        raise ValueError(f"Anima block index {block_index} in '{base_module_name}' is outside the supported range 0-27.")
+    if not 0 <= block_index < 40:
+        raise ValueError(f"Anima block index {block_index} in '{base_module_name}' is outside the supported range 0-39.")
 
     suffix = match.group(2)
     if suffix.startswith("self_attn_") or suffix.startswith("adaln_modulation_self_attn_"):
@@ -154,6 +147,8 @@ def save_lora(path, state_dict, metadata=None, no_metadata=False):
 
 
 def scale_lora_state_dict(state_dict, scales, lbw=None, ratio=1.0):
+    if lbw is not None:
+        validate_anima_block_weights(lbw, state_dict)
     scaled_modules = {"self_attn": 0, "cross_attn": 0, "mlp": 0}
     skipped_modules = 0
     result = dict(state_dict)
@@ -199,7 +194,7 @@ def build_parser():
         type=str,
         nargs="*",
         default=[],
-        help="One 28-value JSON array or structured JSON object for Anima blocks 0-27.",
+        help="One 28- or 40-value JSON array or structured JSON object for Anima blocks 0-27 or 0-39.",
     )
     parser.add_argument(
         "--ratio",
@@ -225,6 +220,7 @@ def main():
     if not math.isfinite(args.ratio):
         raise ValueError("The --ratio value must be finite.")
     state_dict, metadata = load_lora(args.input)
+    summary_lbw = lbw or {sublayer: [1.0] * infer_anima_lora_block_count(state_dict) for sublayer in ANIMA_LBW_SUBLAYERS}
     scaled_state_dict, scaled_modules, skipped_modules = scale_lora_state_dict(state_dict, scales, lbw, args.ratio)
     if args.no_metadata:
         output_metadata = None
@@ -244,7 +240,6 @@ def main():
             output_metadata["sshs_legacy_hash"] = legacy_hash
     save_lora(args.output, scaled_state_dict, output_metadata, args.no_metadata)
 
-    summary_lbw = lbw or {sublayer: [1.0] * ANIMA_LBW_BLOCK_COUNT for sublayer in ANIMA_LBW_SUBLAYERS}
     for summary in format_anima_lbw_summary(args.input, args.ratio, summary_lbw):
         logger.info(summary)
     logger.info("Saved scaled LoRA to %s", args.output)

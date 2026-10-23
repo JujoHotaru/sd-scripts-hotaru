@@ -15,10 +15,10 @@
 
 ## 十条蛍(Hotaru Jujo)による追加・修正
 
-- **Anima LoRA 倍率変更** — SVD を使わず rank を変えずに、`self_attn`、`cross_attn`、`mlp` の強度を変更します。DiT ブロック 0〜27 の28ブロック分の重みに対応します。[`anima_lora_scale.py`](./anima_lora_scale.py)と[解説](./docs/anima_lora_scale.md)を参照してください。
+- **Anima LoRA 倍率変更** — SVD を使わず rank を変えずに、`self_attn`、`cross_attn`、`mlp` の強度を変更します。従来の Anima は28層（0〜27）、Anima 2.9B は40層（0〜39）のブロック重みに対応します。[`anima_lora_scale.py`](./anima_lora_scale.py)と[解説](./docs/anima_lora_scale.md)を参照してください。
 - **Anima 向け LoRA マージ** — SVD を使って Anima LoRA をマージし、ブロック単位とサブレイヤー単位の倍率を指定できます。[`anima_merger.py`](./anima_merger.py)と[解説](./docs/anima_merger.md)を参照してください。
 - **メタデータ hash 更新の修正** — tensor データを変更した際に model hash を再計算し、出力メタデータを変更後の tensor に合わせます。
 
 ## 注意点
 
-学習機能は実験的です。LoRA ツールでは sd-scripts 形式の互換性がある key と tensor shape が必要です。Anima のブロック重みは 0〜27 に対応します。使い方と制約は各解説を確認してください。インストールと基本設定には[原本 README](./README-ja.md)を参照してください。
+学習機能は実験的です。LoRA ツールでは sd-scripts 形式の互換性がある key と tensor shape が必要です。ブロック重みには従来の Anima 用の28要素配列、または Anima 2.9B 用の40要素配列を指定します。共通モデル読み込み処理には[上流 PR #2418](https://github.com/kohya-ss/sd-scripts/pull/2418)を取り込んでいます。対応範囲と制約は[Anima 2.9B 対応](./docs/anima_29b.md)を参照してください。インストールと基本設定には[原本 README](./README-ja.md)を参照してください。
