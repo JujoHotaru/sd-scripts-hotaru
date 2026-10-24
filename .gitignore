@@ -15,6 +15,7 @@ MagicMock
 .codex
 .codex-tmp
 references
+.vs
 
 # inpainting test artefacts (synthetic data, training outputs, downloads, mask viz)
 tests/test_data/
