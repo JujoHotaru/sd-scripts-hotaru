@@ -40,6 +40,29 @@ For multiple LoRAs, pass one `--ratios` value and one `--lbws` value per entry i
 
 複数の LoRA を使う場合、`--models` の各項目に対応する `--ratios` と `--lbws` を指定してください。`--lbws` を省略すると、すべてのブロックを `1.0` として扱います。番号付き DiT block の外にある module も `1.0` です。
 
+## Merging across model depths / 28層・40層間のマージ
+
+Checkpoint and LoRA depths are inferred from their block keys. Both directions are automatic; no conversion option is required. For 28-to-40 merging, blocks 1, 3, 5, 7, 9, 11, 14, 16, 18, 20, 22, and 24 are duplicated in order. This reproduces Forge Neo's block placement using an independent implementation; LoRA strength is unchanged by duplication. For 40-to-28 merging, each corresponding pair contributes half of its own delta, including its own alpha/rank scaling. A missing pair member contributes zero. Non-block modules retain their ordinary ratio.
+
+モデルと LoRA の層数はブロックのキーから推定し、両方向とも自動で対応付けます。変換用の追加オプションは不要です。28層 → 40層では、元の層順を保ちながら、ブロック1・3・5・7・9・11・14・16・18・20・22・24をそれぞれ2回配置します。Forge Neoと同じ配置を独立実装したもので、複製による倍率の変更はありません。40層 → 28層では、対応する2層の差分行列をそれぞれの `alpha / rank` を含めて計算し、平均します。片方のモジュールが存在しない場合は、その差分をゼロとして扱います。ブロック外のモジュールには通常の ratio を適用します。
+
+The length of each LoRA's `--lbws` entry selects which depth the weights describe:
+
+LoRA ごとの `--lbws` は、配列の長さによって倍率を指定する層が決まります。
+
+| LoRA → checkpoint | 28 values / 28個 | 40 values / 40個 |
+|---|---|---|
+| 28 → 40 | Source LoRA blocks / 元LoRAの層 | Destination checkpoint blocks / 変換先モデルの層 |
+| 40 → 28 | Destination checkpoint blocks / 変換先モデルの層 | Source LoRA blocks / 元LoRAの層 |
+
+For reverse mapping, source weights are applied before averaging; destination weights scale the resulting average. The same rule applies to structured per-sublayer arrays. Omitting `--lbws` uses all ones, and `--lbws_anima` remains an additional sublayer multiplier. Inputs of both LoRA depths may be mixed in one command.
+
+40層 → 28層で元LoRAの40個の倍率を指定した場合は、倍率を掛けた差分同士を平均します。変換先の28個の倍率を指定した場合は、平均した差分に倍率を掛けます。サブレイヤー別の構造化配列でも同じ規則です。`--lbws` を省略すると各倍率は `1.0` で、`--lbws_anima` は各サブレイヤーへの追加倍率として適用されます。28層用と40層用の LoRA を1回のコマンドで混在させることもできます。
+
+Depth inference follows the highest block index present in the LoRA. A partial 40-block LoRA containing only blocks 0–27 is therefore inferred as 28-block. Reverse averaging restores duplicated deltas, but cannot preserve two independently trained 40-block deltas separately in one 28-block weight.
+
+LoRA の層数は、含まれる最大ブロック番号から推定します。このため、40層用でもブロック0〜27しか含まない部分 LoRA は、28層用と判定されます。逆方向の平均化では、複製した差分を元に戻せますが、別々に学習した2層の差分を1層に個別に保持することはできません。
+
 ## Scope and behavior / 対象範囲と動作
 
 - Merges sd-scripts `lora_unet_*` weights into matching Anima DiT checkpoint weights. Text-encoder LoRA weights are not merged by this script.
