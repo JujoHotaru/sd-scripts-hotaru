@@ -17,6 +17,7 @@ This fork is based on [tukisuwa's fork (tukisuwa/sd-scripts)](https://github.com
 
 - **Anima LoRA scaling** — Changes the strengths of `self_attn`, `cross_attn`, and `mlp` without SVD or changing the rank. Supports 28-block Anima (0–27) and 40-block Anima 2.9B (0–39). See [`anima_lora_scale.py`](./anima_lora_scale.py) and the [guide](./docs/anima_lora_scale.md).
 - **Anima LoRA merger** — Merges Anima LoRAs using SVD, with multipliers for individual blocks and sublayers. See [`anima_merger.py`](./anima_merger.py) and the [guide](./docs/anima_merger.md).
+- **Anima LoRA checkpoint merge** — Merges sd-scripts-format DiT LoRAs directly into a base checkpoint, with per-LoRA ratios and block weights. See [`anima_merge_to_model.py`](./anima_merge_to_model.py) and the [guide](./docs/anima_merge_to_model.md).
 - **Metadata hash update fix** — Recalculates model hashes when tensor data changes, so the output metadata matches the modified tensors.
 
 ## Notes
