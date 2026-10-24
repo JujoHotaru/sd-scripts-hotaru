@@ -17,6 +17,7 @@
 
 - **Anima LoRA 倍率変更** — SVD を使わず rank を変えずに、`self_attn`、`cross_attn`、`mlp` の強度を変更します。従来の Anima は28層（0〜27）、Anima 2.9B は40層（0〜39）のブロック重みに対応します。[`anima_lora_scale.py`](./anima_lora_scale.py)と[解説](./docs/anima_lora_scale.md)を参照してください。
 - **Anima 向け LoRA マージ** — SVD を使って Anima LoRA をマージし、ブロック単位とサブレイヤー単位の倍率を指定できます。[`anima_merger.py`](./anima_merger.py)と[解説](./docs/anima_merger.md)を参照してください。
+- **Anima LoRA の checkpoint マージ** — sd-scripts 形式の DiT LoRA をベース checkpoint に直接マージし、LoRA ごとの ratio とブロック重みを指定できます。[`anima_merge_to_model.py`](./anima_merge_to_model.py)と[解説](./docs/anima_merge_to_model.md)を参照してください。
 - **メタデータ hash 更新の修正** — tensor データを変更した際に model hash を再計算し、出力メタデータを変更後の tensor に合わせます。
 
 ## 注意点
